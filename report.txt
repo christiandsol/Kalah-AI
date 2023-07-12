@@ -1,0 +1,193 @@
+For my structure of the board class, I used a vector within a vector for ease of use purposes, i.e not having to write copy constructurs/destructors/operator=. This proved to be much easier as the use of brackets to located and assign values for the class was simple. For the player class, I structured it polymorphicly. Each class derived from Player but had their own implementations for their function. The SmartPlayer::ChooseMove was implemented using hte minimax functionality with a depth and time constraint. The function assigned values depending on the original side that called, which was another parameter, so that that side had the best choice. My evaluation function took the difference in beans on one side compared with the other, divided that by 2 and multiplied that by the differnece in the pots. I utilized a private helper function chooseMoveHelper to implement this correctly. For my game funcitonality, move(s) was the lifeline and was surrounded with a while loop until it returned false, where then the status function was called to declared and assign a winner.
+
+
+The SmartPlayer::ChooseMove was implemented using the minimax functionality with a depth and time constraint. Jumpy time was called instantly in the non-helper funciton to start the clock, where it was used in the helper function to time it exactly. The function assigned values depending on the original side that called, which was another parameter, so that that side had the best choice. My evaluation function took the difference in beans on one side compared with the other, divided that by 2 and multiplied that by the differnece in the pots. The reason for the 'original' parameter was to alwasy have the original side that called so as to evaluate the best choice for that funciton depending on the level of recursive call.
+
+
+Sow function:
+function sow(Side s, int hole, Side& endSide, int& endHole):
+    Check if the move is valid
+    Store initial values
+
+    Sow the beans counterclockwise
+    while beansToSow > 0:
+        if endSide == NORTH:
+            Sow beens in North direction
+        else:
+            Sow beans in south directions
+
+    store final values
+    return true
+
+
+bool Game::move(Side s)
+    if side has no beans to play, pick up opponents and return false
+    choose hole for specific side
+        if not interactive show choice
+    sow and check captures
+    if you landed in your own pot
+        change display accordingy return opponents move
+    return true;
+    
+    
+One of the main troubles I had was the correct assigning of the value v2 and bestHole. Granted, this was more a situation of conditional statements being incorrect because of a lack of understanding of the recursive algorithm. I first attempted to have an evaluate function that always evaluate south, which proved tedious. Then I attempted to use the depth paramter to decide what the values were going to be initialized to, this worked okay but I decided to go for a simpler functionality which is to pass in an extra argument which is to be the original side that calls the chooseMove function and to never change it.
+
+Test Cases:
+Test board construction
+    Board b1(6,4);
+    Board b2(-1,0);
+    test holes and valid statements
+    assert(b2.holes()==1);
+    test beansInPlay after construction
+    assert(b2.beansInPlay(NORTH)==0);
+    test pots evaluate correctly
+    assert(b2.beans(NORTH, 0)==0);
+    assert(b2.beans(SOUTH, 0)==0);
+    check north has not holes for b1
+    for (int i = 1; i < b2.holes() + 1; i++){
+        assert(b2.beans(NORTH, i)==0);
+    }
+    check holes functionality
+    assert(b1.holes()==6);
+/test beans i play
+    assert(b1.beansInPlay(NORTH)==24);
+    assert(b1.beansInPlay(SOUTH)==24);
+    test toatl beasn
+    assert(b1.totalBeans()==48);
+    test pots
+    assert(b1.beans(NORTH, 0)==0);
+    assert(b1.beans(SOUTH, 0)==0);
+    test setBeans validation
+    assert(b2.setBeans(NORTH, 5, 8)==false);
+    test setBeans
+    assert(b1.setBeans(NORTH, 5, 8));
+    assert(b1.beans(NORTH, 5)==8);
+    test that setBeans changes beansInPlay and total beans
+    assert(b1.beansInPlay(NORTH)==28);
+    assert(b1.totalBeans()==(48+4));
+    check move to Pot functionlity and that they change the values the are meant to
+    assert(!b1.moveToPot(NORTH, 0, NORTH));
+    assert(b1.moveToPot(NORTH, 5, SOUTH));
+    assert(b1.beans(SOUTH, 0)==8);
+    assert(b1.beansInPlay(NORTH)==(20));
+    assert(b1.beansInPlay(SOUTH)==(24));
+    assert(b1.totalBeans()==52);
+    assert(b1.moveToPot(NORTH, 5, NORTH));
+    assert(b1.beans(NORTH, 0)==0);
+    test Sow and that endSide and endHOle are changed correctly as well as the board
+    Side endSide;
+    int endHole;
+    Board b3(4,2);
+    assert(b3.sow(SOUTH, 4, endSide, endHole)==true);
+    assert(endHole == 4 && endSide == NORTH);
+    assert(b3.beans(NORTH, 4)==3);
+    assert(b3.beans(SOUTH, 4)==0);
+    assert(b3.beans(NORTH,0)==0);
+    assert(b3.beans(SOUTH,0)==1);
+    Board b4(4, 16);
+    assert(b4.sow(NORTH,2,endSide, endHole)==true);
+    assert(endSide == NORTH && endHole ==4);
+    for (int i = 1; i < 4; i++){
+        assert(b4.beans(SOUTH, i)==18);
+    }
+    assert(b4.beans(NORTH, POT)==2);
+    assert(b4.beans(NORTH, 1)==18);
+    assert(b4.beans(NORTH, 3)==17);
+    assert(b4.beans(NORTH, 4)==18);
+    assert(b4.beans(NORTH, 2)==1);
+    assert(b4.beansInPlay(NORTH)==(18*2 + 1 + 17));
+    assert(b4.beansInPlay(SOUTH)== (18*4));
+
+
+    test Player
+    Board b5(6,4);
+    HumanPlayer p1("test");
+    assert(p1.name()=="test");
+    test interactive funciton
+    assert(p1.isInteractive());
+test constructor
+    BadPlayer bp1("Bad");
+    assert(bp1.name()=="Bad");
+    assert(!bp1.isInteractive());
+    test chooseMove for badplayer
+    int number = bp1.chooseMove(b5, NORTH);
+    assert(number == 1);
+    test chooseMove still works if earlier holes are 0
+    b5.setBeans(NORTH, 1, 0);
+    number = bp1.chooseMove(b5, NORTH);
+    assert(number == 2);
+    number = bp1.chooseMove(b5, SOUTH);
+    assert(number == 1);
+    b5.setBeans(SOUTH, 1, 0);
+    number = bp1.chooseMove(b5, SOUTH);
+    assert(number == 2);
+    for (int i = 2; i < 7; i++){
+        b5.setBeans(SOUTH, i, 0);
+    }
+    assert(bp1.chooseMove(b5, SOUTH)==-1);
+
+    //test GAME
+    Board gameBoard(3,2);
+    BadPlayer player1("Christian");
+    BadPlayer player2("Kim");
+    SmartPlayer player3("player")
+    SmartPlayer player 4("smart")"")
+    HumanPlayer hp1("1");
+    HumanPlayer hp2("2")
+    run games and check
+test status and set beans again
+    BadPlayer bp1("Bart");
+    BadPlayer bp2("Homer");
+    Board b(3, 0);
+    b.setBeans(SOUTH, 1, 2);
+    b.setBeans(NORTH, 2, 1);
+    b.setBeans(NORTH, 3, 2);
+    Game g(b, &bp1, &bp2);
+    bool over;
+    bool hasWinner;
+    Side winner;
+      //    Homer
+      //   0  1  2
+      // 0         0
+      //   2  0  0
+      //    Bart
+    g.status(over, hasWinner, winner);
+    assert(!over && g.beans(NORTH, POT) == 0 && g.beans(SOUTH, POT) == 0 &&
+    g.beans(NORTH, 1) == 0 && g.beans(NORTH, 2) == 1 && g.beans(NORTH, 3) == 2 &&
+    g.beans(SOUTH, 1) == 2 && g.beans(SOUTH, 2) == 0 && g.beans(SOUTH, 3) == 0);
+
+    g.move(SOUTH);
+
+    g.status(over, hasWinner, winner);
+    assert(!over && g.beans(NORTH, POT) == 0 && g.beans(SOUTH, POT) == 3 &&
+    g.beans(NORTH, 1) == 0 && g.beans(NORTH, 2) == 1 && g.beans(NORTH, 3) == 0 &&
+    g.beans(SOUTH, 1) == 0 && g.beans(SOUTH, 2) == 1 && g.beans(SOUTH, 3) == 0);
+
+    g.move(NORTH);
+      //   1  0  0
+      // 0         3
+      //   0  1  0
+    g.status(over, hasWinner, winner);
+    assert(!over && g.beans(NORTH, POT) == 0 && g.beans(SOUTH, POT) == 3 &&
+    g.beans(NORTH, 1) == 1 && g.beans(NORTH, 2) == 0 && g.beans(NORTH, 3) == 0 &&
+    g.beans(SOUTH, 1) == 0 && g.beans(SOUTH, 2) == 1 && g.beans(SOUTH, 3) == 0);
+
+    g.move(SOUTH);
+      //   1  0  0
+      // 0         3
+      //   0  0  1
+    g.status(over, hasWinner, winner);
+    assert(!over && g.beans(NORTH, POT) == 0 && g.beans(SOUTH, POT) == 3 &&
+    g.beans(NORTH, 1) == 1 && g.beans(NORTH, 2) == 0 && g.beans(NORTH, 3) == 0 &&
+    g.beans(SOUTH, 1) == 0 && g.beans(SOUTH, 2) == 0 && g.beans(SOUTH, 3) == 1);
+
+    g.move(NORTH);
+      //   0  0  0
+      // 1         4
+      //   0  0  0
+    g.status(over, hasWinner, winner);
+    assert(over && g.beans(NORTH, POT) == 1 && g.beans(SOUTH, POT) == 4 &&
+    g.beans(NORTH, 1) == 0 && g.beans(NORTH, 2) == 0 && g.beans(NORTH, 3) == 0 &&
+    g.beans(SOUTH, 1) == 0 && g.beans(SOUTH, 2) == 0 && g.beans(SOUTH, 3) == 0);
+    assert(hasWinner && winner == SOUTH);
+
